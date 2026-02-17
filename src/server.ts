@@ -6,6 +6,7 @@ import { ApolloServerPluginLandingPageLocalDefault } from "@apollo/server/plugin
 import { typeDefs, resolvers } from "./graphql/schema";
 import { db } from "./db";
 import bodyParser from "body-parser";
+import { verifyToken } from "./modules/auth/utils/jwt";
 
 const PORT = process.env.PORT || 8080;
 
@@ -34,7 +35,18 @@ async function start() {
   await server.start();
 
   const gqlMiddleware = expressMiddleware(server, {
-    context: async () => ({ db }),
+    context: async ({ req }) => {
+      const auth = req.headers["authorization"] || req.headers["Authorization"];
+      let userId: string | null = null;
+      if (typeof auth === "string" && auth.startsWith("Bearer ")) {
+        const token = auth.slice("Bearer ".length).trim();
+        const payload = verifyToken(token);
+        if (payload && typeof payload.sub === "string") {
+          userId = payload.sub;
+        }
+      }
+      return { db, userId };
+    },
   }) as unknown as any; // Type shim for Express 5 vs Apollo express4 types
 
   // Ensure JSON body is parsed exactly once before Apollo middleware.

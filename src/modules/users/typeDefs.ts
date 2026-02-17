@@ -3,6 +3,7 @@ export const usersTypeDefs = /* GraphQL */ `
     id: Int!
     name: String!
     email: String!
+    gender: Gender!
     createdAt: String!
   }
 
