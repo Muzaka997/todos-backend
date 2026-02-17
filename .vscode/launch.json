@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Backend: Attach to npm run dev",
+      "port": 9430,
+      "address": "localhost",
+      "restart": true,
+      "cwd": "${workspaceFolder}/backup",
+      "skipFiles": ["<node_internals>/**"],
+      "preLaunchTask": "backend: dev (inspect)"
+    }
+  ],
+  "compounds": []
+}
