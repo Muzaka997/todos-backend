@@ -10,3 +10,17 @@ export const users = sqliteTable("users", {
   gender: text("gender").notNull().default("OTHER"),
   createdAt: text("created_at").notNull().default(new Date().toISOString()),
 });
+
+// Unified tasks table to back both Todo and NotTodo
+export const tasks = sqliteTable("tasks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  // 0/1 stored as integer for boolean
+  category: text("category").notNull().default("General"),
+  tags: text("tags").notNull().default("[]"), // Store array as JSON string
+  estimatedMinutes: integer("estimated_minutes").notNull().default(0),
+  completed: integer("completed").notNull().default(0),
+  // 'TODO' or 'NOT_TODO'
+  type: text("type").notNull().default("TODO"),
+  createdAt: text("created_at").notNull().default(new Date().toISOString()),
+});
