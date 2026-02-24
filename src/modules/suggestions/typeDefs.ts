@@ -9,6 +9,8 @@ export const suggestionsTypeDefs = /* GraphQL */ `
 
   extend type Query {
     suggestions(category: String, limit: Int): [Suggestion!]!
+    todoSuggestions(category: String, limit: Int): [Suggestion!]!
+    notTodoSuggestions(category: String, limit: Int): [Suggestion!]!
     suggestion(id: ID!): Suggestion
   }
 

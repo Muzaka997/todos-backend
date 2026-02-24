@@ -1,4 +1,8 @@
-import { filterSuggestions, findSuggestion } from "./data";
+import {
+  filterTodoSuggestions,
+  filterNotTodoSuggestions,
+  findSuggestion,
+} from "./data";
 import { db } from "../../db";
 import { addTask, type TaskRow } from "../tasks/data";
 
@@ -7,7 +11,16 @@ export const suggestionsResolvers = {
     suggestions: (
       _r: unknown,
       args: { category?: string | null; limit?: number | null },
-    ) => filterSuggestions({ category: args.category, limit: args.limit }),
+    ) => filterTodoSuggestions({ category: args.category, limit: args.limit }),
+    todoSuggestions: (
+      _r: unknown,
+      args: { category?: string | null; limit?: number | null },
+    ) => filterTodoSuggestions({ category: args.category, limit: args.limit }),
+    notTodoSuggestions: (
+      _r: unknown,
+      args: { category?: string | null; limit?: number | null },
+    ) =>
+      filterNotTodoSuggestions({ category: args.category, limit: args.limit }),
     suggestion: (_r: unknown, args: { id: string }) =>
       findSuggestion(args.id) ?? null,
   },
