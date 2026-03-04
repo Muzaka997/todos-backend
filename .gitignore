@@ -43,4 +43,6 @@ Thumbs.db
 *.sqlite-journal
 
 # Drizzle ORM
+# commit migration metadata so hosts can run `drizzle-kit migrate`
+!drizzle/meta/_journal.json
 /drizzle/meta/
