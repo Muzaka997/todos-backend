@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 8080;
 
 async function start() {
   const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN
-    ? process.env.FRONTEND_ORIGIN.split(",")
+    ? [process.env.FRONTEND_ORIGIN]
     : ["http://localhost:5173", "http://localhost:3000"];
 
   const corsOptions: cors.CorsOptions = {
