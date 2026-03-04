@@ -11,9 +11,13 @@ import { verifyToken } from "./modules/auth/utils/jwt";
 const PORT = process.env.PORT || 8080;
 
 async function start() {
-  const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN
-    ? [process.env.FRONTEND_ORIGIN]
+  // read the allowed origin(s) from an env var.  Render stores them as a
+  // single string, so we support a comma-separated list and normalize it.
+  const rawOrigin = process.env.FRONTEND_ORIGIN ?? "";
+  const FRONTEND_ORIGIN = rawOrigin
+    ? rawOrigin.split(",").map((u) => u.trim().replace(/\/+$/, "")) // strip trailing slashes
     : ["http://localhost:5173", "http://localhost:3000"];
+  console.log("CORS allowed origins:", FRONTEND_ORIGIN);
 
   const corsOptions: cors.CorsOptions = {
     origin: FRONTEND_ORIGIN,
