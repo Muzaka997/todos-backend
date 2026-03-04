@@ -6,8 +6,28 @@ const sqlite = new Database("db.sqlite");
 
 export const db = drizzle(sqlite, { schema });
 
-// Best-effort migration for events table if it does not exist yet
+// Best-effort migration for events, users, and tasks tables if they do not exist yet
 sqlite.exec(`
+	CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		name TEXT NOT NULL,
+		email TEXT NOT NULL UNIQUE,
+		password_hash TEXT,
+		gender TEXT NOT NULL DEFAULT 'OTHER',
+		created_at TEXT NOT NULL DEFAULT (datetime('now'))
+	);
+
+	CREATE TABLE IF NOT EXISTS tasks (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL,
+		category TEXT NOT NULL DEFAULT 'General',
+		tags TEXT NOT NULL DEFAULT '[]',
+		estimated_minutes INTEGER NOT NULL DEFAULT 0,
+		completed INTEGER NOT NULL DEFAULT 0,
+		type TEXT NOT NULL DEFAULT 'TODO',
+		created_at TEXT NOT NULL DEFAULT (datetime('now'))
+	);
+
 	CREATE TABLE IF NOT EXISTS events (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		title TEXT NOT NULL,
