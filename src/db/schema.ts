@@ -24,3 +24,14 @@ export const tasks = sqliteTable("tasks", {
   type: text("type").notNull().default("TODO"),
   createdAt: text("created_at").notNull().default(new Date().toISOString()),
 });
+
+// Events table for calendar scheduling
+export const events = sqliteTable("events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  start: text("start").notNull(), // ISO string
+  end: text("end").notNull(), // ISO string
+  kind: text("kind").notNull().default("TODO"), // TODO | NOT_TODO
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().default(new Date().toISOString()),
+});
