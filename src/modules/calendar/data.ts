@@ -1,4 +1,4 @@
-import { and, between, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, lte } from "drizzle-orm";
 import { events as eventsTable } from "../../db/schema";
 
 export type EventKind = "TODO" | "NOT_TODO";
@@ -18,10 +18,12 @@ export async function getEventsInRange(
   timeMin: string,
   timeMax: string,
 ): Promise<EventRow[]> {
+  // Return any event that overlaps the requested window:
+  // start <= timeMax AND end >= timeMin
   return await db
     .select()
     .from(eventsTable)
-    .where(and(gte(eventsTable.start, timeMin), lte(eventsTable.end, timeMax)));
+    .where(and(lte(eventsTable.start, timeMax), gte(eventsTable.end, timeMin)));
 }
 
 export async function getEventById(

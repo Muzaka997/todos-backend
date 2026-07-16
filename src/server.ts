@@ -17,10 +17,21 @@ async function start() {
   const FRONTEND_ORIGIN = rawOrigin
     ? rawOrigin.split(",").map((u) => u.trim().replace(/\/+$/, "")) // strip trailing slashes
     : ["http://localhost:5173", "http://localhost:3000"];
-  console.log("CORS allowed origins:", FRONTEND_ORIGIN);
+  // Any localhost / 127.0.0.1 origin on any port is allowed for local dev, so
+  // it doesn't matter whether the browser hits :5173 via `localhost` or the
+  // `127.0.0.1` alias (which is otherwise a distinct, non-matching origin).
+  const isLocalhost = (origin: string) =>
+    /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+  console.log("CORS allowed origins:", FRONTEND_ORIGIN, "(+ any localhost)");
 
   const corsOptions: cors.CorsOptions = {
-    origin: FRONTEND_ORIGIN,
+    origin(origin, callback) {
+      // No Origin header => non-browser client (curl, same-origin) => allow.
+      if (!origin || FRONTEND_ORIGIN.includes(origin) || isLocalhost(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Origin not allowed by CORS: ${origin}`));
+    },
     credentials: true,
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: [
