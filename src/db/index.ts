@@ -28,6 +28,16 @@ sqlite.exec(`
 		created_at TEXT NOT NULL DEFAULT (datetime('now'))
 	);
 
+	CREATE TABLE IF NOT EXISTS notes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL DEFAULT '',
+		body TEXT NOT NULL DEFAULT '',
+		audio TEXT,
+		pinned INTEGER NOT NULL DEFAULT 0,
+		created_at TEXT NOT NULL DEFAULT (datetime('now')),
+		updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+	);
+
 	CREATE TABLE IF NOT EXISTS events (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		title TEXT NOT NULL,
@@ -41,3 +51,11 @@ sqlite.exec(`
 	CREATE INDEX IF NOT EXISTS idx_events_end ON events(end);
 	CREATE INDEX IF NOT EXISTS idx_events_kind ON events(kind);
 `);
+
+// Best-effort column add for databases created before `notes.audio` existed.
+// SQLite has no "ADD COLUMN IF NOT EXISTS", so ignore the error when it's already there.
+try {
+  sqlite.exec(`ALTER TABLE notes ADD COLUMN audio TEXT;`);
+} catch {
+  /* column already exists */
+}

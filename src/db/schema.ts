@@ -25,6 +25,19 @@ export const tasks = sqliteTable("tasks", {
   createdAt: text("created_at").notNull().default(new Date().toISOString()),
 });
 
+// Notes table for free-form personal notes
+export const notes = sqliteTable("notes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull().default(""),
+  body: text("body").notNull().default(""),
+  // Optional voice recording, stored as a base64 data URL (e.g. data:audio/webm;base64,…)
+  audio: text("audio"),
+  // 0/1 stored as integer for boolean
+  pinned: integer("pinned").notNull().default(0),
+  createdAt: text("created_at").notNull().default(new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().default(new Date().toISOString()),
+});
+
 // Events table for calendar scheduling
 export const events = sqliteTable("events", {
   id: integer("id").primaryKey({ autoIncrement: true }),
