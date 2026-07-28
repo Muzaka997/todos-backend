@@ -5,6 +5,7 @@ export type EventKind = "TODO" | "NOT_TODO";
 
 export type EventRow = {
   id: number;
+  userId: number;
   title: string;
   start: string; // ISO
   end: string; // ISO
@@ -15,30 +16,39 @@ export type EventRow = {
 
 export async function getEventsInRange(
   db: typeof import("../../db").db,
+  userId: number,
   timeMin: string,
   timeMax: string,
 ): Promise<EventRow[]> {
-  // Return any event that overlaps the requested window:
+  // Return this user's events that overlap the requested window:
   // start <= timeMax AND end >= timeMin
   return await db
     .select()
     .from(eventsTable)
-    .where(and(lte(eventsTable.start, timeMax), gte(eventsTable.end, timeMin)));
+    .where(
+      and(
+        eq(eventsTable.userId, userId),
+        lte(eventsTable.start, timeMax),
+        gte(eventsTable.end, timeMin),
+      ),
+    );
 }
 
 export async function getEventById(
   db: typeof import("../../db").db,
+  userId: number,
   id: number,
 ): Promise<EventRow | null> {
   const rows = await db
     .select()
     .from(eventsTable)
-    .where(eq(eventsTable.id, id));
+    .where(and(eq(eventsTable.id, id), eq(eventsTable.userId, userId)));
   return rows[0] ?? null;
 }
 
 export async function addEvent(
   db: typeof import("../../db").db,
+  userId: number,
   params: {
     title: string;
     start: string;
@@ -50,6 +60,7 @@ export async function addEvent(
   const [created] = await db
     .insert(eventsTable)
     .values({
+      userId,
       title: params.title,
       start: params.start,
       end: params.end,
@@ -62,6 +73,7 @@ export async function addEvent(
 
 export async function updateEvent(
   db: typeof import("../../db").db,
+  userId: number,
   id: number,
   patch: Partial<{
     title: string;
@@ -71,22 +83,25 @@ export async function updateEvent(
     notes: string | null;
   }>,
 ): Promise<EventRow> {
-  const found = await getEventById(db, id);
+  const found = await getEventById(db, userId, id);
   if (!found) throw new Error("Event not found");
   const [updated] = await db
     .update(eventsTable)
     .set({ ...(patch as any) })
-    .where(eq(eventsTable.id, id))
+    .where(and(eq(eventsTable.id, id), eq(eventsTable.userId, userId)))
     .returning();
   return updated;
 }
 
 export async function deleteEvent(
   db: typeof import("../../db").db,
+  userId: number,
   id: number,
 ): Promise<boolean> {
-  const found = await getEventById(db, id);
+  const found = await getEventById(db, userId, id);
   if (!found) return false;
-  await db.delete(eventsTable).where(eq(eventsTable.id, id));
+  await db
+    .delete(eventsTable)
+    .where(and(eq(eventsTable.id, id), eq(eventsTable.userId, userId)));
   return true;
 }

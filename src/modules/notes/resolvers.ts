@@ -1,4 +1,5 @@
 import { db } from "../../db";
+import { requireUserId, type Ctx } from "../../graphql/guards";
 import {
   addNote,
   deleteNote,
@@ -7,8 +8,6 @@ import {
   updateNote,
   type NoteRow,
 } from "./data";
-
-type Ctx = { userId?: string | null };
 
 type GqlNote = {
   id: string;
@@ -35,13 +34,13 @@ function mapRow(n: NoteRow): GqlNote {
 export const notesResolvers = {
   Query: {
     notes: async (_r: unknown, _a: unknown, ctx: Ctx) => {
-      if (!ctx?.userId) throw new Error("Not authenticated");
-      const rows = await getNotes(db);
+      const userId = requireUserId(ctx);
+      const rows = await getNotes(db, userId);
       return rows.map(mapRow);
     },
     note: async (_r: unknown, args: { id: string }, ctx: Ctx) => {
-      if (!ctx?.userId) throw new Error("Not authenticated");
-      const row = await getNoteById(db, Number(args.id));
+      const userId = requireUserId(ctx);
+      const row = await getNoteById(db, userId, Number(args.id));
       return row ? mapRow(row) : null;
     },
   },
@@ -51,8 +50,8 @@ export const notesResolvers = {
       args: { title?: string | null; body?: string | null; audio?: string | null },
       ctx: Ctx,
     ) => {
-      if (!ctx?.userId) throw new Error("Not authenticated");
-      const created = await addNote(db, args);
+      const userId = requireUserId(ctx);
+      const created = await addNote(db, userId, args);
       return mapRow(created);
     },
     updateNote: async (
@@ -66,8 +65,8 @@ export const notesResolvers = {
       },
       ctx: Ctx,
     ) => {
-      if (!ctx?.userId) throw new Error("Not authenticated");
-      const updated = await updateNote(db, Number(args.id), {
+      const userId = requireUserId(ctx);
+      const updated = await updateNote(db, userId, Number(args.id), {
         title: args.title ?? undefined,
         body: args.body ?? undefined,
         audio: args.audio ?? undefined,
@@ -76,8 +75,8 @@ export const notesResolvers = {
       return mapRow(updated);
     },
     deleteNote: async (_r: unknown, args: { id: string }, ctx: Ctx) => {
-      if (!ctx?.userId) throw new Error("Not authenticated");
-      return await deleteNote(db, Number(args.id));
+      const userId = requireUserId(ctx);
+      return await deleteNote(db, userId, Number(args.id));
     },
   },
 };

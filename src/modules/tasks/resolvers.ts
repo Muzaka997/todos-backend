@@ -1,4 +1,5 @@
 import { db } from "../../db";
+import { requireUserId, type Ctx } from "../../graphql/guards";
 import {
   addTask,
   deleteTask,
@@ -8,8 +9,6 @@ import {
   updateTaskTitle,
   type TaskRow,
 } from "./data";
-
-type Ctx = { userId?: string | null };
 
 type GqlTask = {
   id: string;
@@ -43,12 +42,18 @@ function mapRow(t: TaskRow): GqlTask {
 
 export const tasksResolvers = {
   Query: {
-    tasks: async (_r: unknown, args: { type: "TODO" | "NOT_TODO" }) => {
-      const rows = await getTasks(db, args.type);
+    tasks: async (
+      _r: unknown,
+      args: { type: "TODO" | "NOT_TODO" },
+      ctx: Ctx,
+    ) => {
+      const userId = requireUserId(ctx);
+      const rows = await getTasks(db, userId, args.type);
       return rows.map(mapRow);
     },
-    task: async (_r: unknown, args: { id: string }) => {
-      const row = await getTaskById(db, Number(args.id));
+    task: async (_r: unknown, args: { id: string }, ctx: Ctx) => {
+      const userId = requireUserId(ctx);
+      const row = await getTaskById(db, userId, Number(args.id));
       return row ? mapRow(row) : null;
     },
   },
@@ -64,8 +69,8 @@ export const tasksResolvers = {
       },
       ctx: Ctx,
     ) => {
-      if (!ctx?.userId) throw new Error("Not authenticated");
-      const created = await addTask(db, {
+      const userId = requireUserId(ctx);
+      const created = await addTask(db, userId, {
         type: args.type,
         title: args.title,
         category: args.category,
@@ -75,8 +80,8 @@ export const tasksResolvers = {
       return mapRow(created);
     },
     toggleTask: async (_r: unknown, args: { id: string }, ctx: Ctx) => {
-      if (!ctx?.userId) throw new Error("Not authenticated");
-      const updated = await toggleTask(db, Number(args.id));
+      const userId = requireUserId(ctx);
+      const updated = await toggleTask(db, userId, Number(args.id));
       return mapRow(updated);
     },
     updateTaskTitle: async (
@@ -84,13 +89,13 @@ export const tasksResolvers = {
       args: { id: string; title: string },
       ctx: Ctx,
     ) => {
-      if (!ctx?.userId) throw new Error("Not authenticated");
-      const updated = await updateTaskTitle(db, Number(args.id), args.title);
+      const userId = requireUserId(ctx);
+      const updated = await updateTaskTitle(db, userId, Number(args.id), args.title);
       return mapRow(updated);
     },
     deleteTask: async (_r: unknown, args: { id: string }, ctx: Ctx) => {
-      if (!ctx?.userId) throw new Error("Not authenticated");
-      return await deleteTask(db, Number(args.id));
+      const userId = requireUserId(ctx);
+      return await deleteTask(db, userId, Number(args.id));
     },
   },
 };

@@ -4,6 +4,7 @@ import {
   findSuggestion,
 } from "./data";
 import { db } from "../../db";
+import { requireUserId } from "../../graphql/guards";
 import { addTask, type TaskRow } from "../tasks/data";
 
 export const suggestionsResolvers = {
@@ -30,10 +31,10 @@ export const suggestionsResolvers = {
       args: { suggestionId: string; type?: "TODO" | "NOT_TODO" },
       ctx: { userId?: string | null },
     ) => {
-      if (!ctx?.userId) throw new Error("Not authenticated");
+      const userId = requireUserId(ctx);
       const s = findSuggestion(args.suggestionId);
       if (!s) throw new Error("Suggestion not found");
-      const created: TaskRow = await addTask(db, {
+      const created: TaskRow = await addTask(db, userId, {
         type: args.type ?? "TODO",
         title: s.title,
         category: s.category,

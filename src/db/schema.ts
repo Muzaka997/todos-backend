@@ -14,6 +14,8 @@ export const users = sqliteTable("users", {
 // Unified tasks table to back both Todo and NotTodo
 export const tasks = sqliteTable("tasks", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  // Owner. Scopes every read/write to the authenticated user.
+  userId: integer("user_id").notNull(),
   title: text("title").notNull(),
   // 0/1 stored as integer for boolean
   category: text("category").notNull().default("General"),
@@ -28,6 +30,7 @@ export const tasks = sqliteTable("tasks", {
 // Notes table for free-form personal notes
 export const notes = sqliteTable("notes", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
   title: text("title").notNull().default(""),
   body: text("body").notNull().default(""),
   // Optional voice recording, stored as a base64 data URL (e.g. data:audio/webm;base64,…)
@@ -41,6 +44,7 @@ export const notes = sqliteTable("notes", {
 // Events table for calendar scheduling
 export const events = sqliteTable("events", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
   title: text("title").notNull(),
   start: text("start").notNull(), // ISO string
   end: text("end").notNull(), // ISO string

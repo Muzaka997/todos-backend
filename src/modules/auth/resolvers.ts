@@ -1,10 +1,19 @@
 import { eq } from "drizzle-orm";
+import { GraphQLError } from "graphql";
 import { db } from "../../db";
 import { users } from "../../db/schema";
 import bcrypt from "bcryptjs";
 import { signToken } from "./utils/jwt";
+import { rateLimit } from "./rateLimit";
 
-type Ctx = { userId?: string | null };
+type Ctx = { userId?: string | null; ip?: string };
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const MIN_PASSWORD = 8;
+
+function badInput(message: string): never {
+  throw new GraphQLError(message, { extensions: { code: "BAD_USER_INPUT" } });
+}
 
 export const authResolvers = {
   Query: {
@@ -32,8 +41,18 @@ export const authResolvers = {
         name: string;
         gender: "MALE" | "FEMALE" | "OTHER";
       },
+      ctx: Ctx,
     ) => {
-      const email = args.email.toLowerCase();
+      rateLimit(`signup:${ctx.ip ?? "unknown"}`, 10, 15 * 60 * 1000);
+
+      const email = args.email.trim().toLowerCase();
+      const name = args.name?.trim() ?? "";
+      if (!EMAIL_RE.test(email)) badInput("Please enter a valid email address.");
+      if (!name) badInput("Please enter your name.");
+      if (typeof args.password !== "string" || args.password.length < MIN_PASSWORD) {
+        badInput(`Password must be at least ${MIN_PASSWORD} characters.`);
+      }
+
       const existing = await db
         .select({ id: users.id })
         .from(users)
@@ -43,7 +62,7 @@ export const authResolvers = {
       const passwordHash = bcrypt.hashSync(args.password, 10);
       const [created] = await db
         .insert(users)
-        .values({ email, name: args.name, gender: args.gender, passwordHash })
+        .values({ email, name, gender: args.gender, passwordHash })
         .returning({
           id: users.id,
           email: users.email,
@@ -55,8 +74,14 @@ export const authResolvers = {
       const token = signToken({ sub: String(created.id) });
       return { token, user: created };
     },
-    login: async (_r: unknown, args: { email: string; password: string }) => {
-      const email = args.email.toLowerCase();
+    login: async (
+      _r: unknown,
+      args: { email: string; password: string },
+      ctx: Ctx,
+    ) => {
+      rateLimit(`login:${ctx.ip ?? "unknown"}`, 10, 15 * 60 * 1000);
+
+      const email = args.email.trim().toLowerCase();
       const found = await db
         .select({
           id: users.id,

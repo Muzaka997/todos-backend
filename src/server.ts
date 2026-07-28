@@ -11,6 +11,17 @@ import { verifyToken } from "./modules/auth/utils/jwt";
 const PORT = process.env.PORT || 8080;
 
 async function start() {
+  // Fail fast in production if the signing secret is missing, rather than
+  // silently falling back to the committed dev secret.
+  if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET must be set in production.");
+  }
+  if (!process.env.JWT_SECRET) {
+    console.warn(
+      "[auth] JWT_SECRET is not set — using the insecure dev fallback. Set JWT_SECRET before deploying.",
+    );
+  }
+
   // read the allowed origin(s) from an env var.  Render stores them as a
   // single string, so we support a comma-separated list and normalize it.
   const rawOrigin = process.env.FRONTEND_ORIGIN ?? "";
@@ -60,7 +71,13 @@ async function start() {
           userId = payload.sub;
         }
       }
-      return { db, userId };
+      // Client IP for per-client rate limiting on auth mutations.
+      const fwd = req.headers["x-forwarded-for"];
+      const ip =
+        (typeof fwd === "string" ? fwd.split(",")[0].trim() : undefined) ||
+        req.socket?.remoteAddress ||
+        "unknown";
+      return { db, userId, ip };
     },
   }) as unknown as any; // Type shim for Express 5 vs Apollo express4 types
 

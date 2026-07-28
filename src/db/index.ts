@@ -19,6 +19,7 @@ sqlite.exec(`
 
 	CREATE TABLE IF NOT EXISTS tasks (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL DEFAULT 0,
 		title TEXT NOT NULL,
 		category TEXT NOT NULL DEFAULT 'General',
 		tags TEXT NOT NULL DEFAULT '[]',
@@ -30,6 +31,7 @@ sqlite.exec(`
 
 	CREATE TABLE IF NOT EXISTS notes (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL DEFAULT 0,
 		title TEXT NOT NULL DEFAULT '',
 		body TEXT NOT NULL DEFAULT '',
 		audio TEXT,
@@ -40,6 +42,7 @@ sqlite.exec(`
 
 	CREATE TABLE IF NOT EXISTS events (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL DEFAULT 0,
 		title TEXT NOT NULL,
 		start TEXT NOT NULL,
 		end TEXT NOT NULL,
@@ -52,10 +55,20 @@ sqlite.exec(`
 	CREATE INDEX IF NOT EXISTS idx_events_kind ON events(kind);
 `);
 
-// Best-effort column add for databases created before `notes.audio` existed.
+// Best-effort column adds for databases created before a column existed.
 // SQLite has no "ADD COLUMN IF NOT EXISTS", so ignore the error when it's already there.
-try {
-  sqlite.exec(`ALTER TABLE notes ADD COLUMN audio TEXT;`);
-} catch {
-  /* column already exists */
+// Legacy rows are backfilled with user_id = 0, which belongs to no real account,
+// so previously-global data becomes invisible once ownership is enforced.
+const bestEffortColumns = [
+  `ALTER TABLE notes ADD COLUMN audio TEXT;`,
+  `ALTER TABLE tasks ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;`,
+  `ALTER TABLE notes ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;`,
+  `ALTER TABLE events ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0;`,
+];
+for (const stmt of bestEffortColumns) {
+  try {
+    sqlite.exec(stmt);
+  } catch {
+    /* column already exists */
+  }
 }
